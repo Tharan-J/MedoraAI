@@ -97,7 +97,7 @@ export default function LandingPage() {
     }, [])
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] relative overflow-clip font-sans">
+        <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] relative overflow-x-clip font-sans">
             {/* Ambient Background Glows */}
             <div className="ambient-glow bg-[#00F5D4] w-[600px] h-[600px] top-[-200px] left-[-200px] opacity-20"></div>
             <div className="ambient-glow bg-[#8B5CF6] w-[500px] h-[500px] bottom-[10%] right-[-100px] opacity-10"></div>

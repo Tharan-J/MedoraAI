@@ -6,8 +6,8 @@ import {
     Users, Activity, BarChart3, Bell, Settings, LogOut, Mic,
     ShieldCheck, Clock, FileAudio, StopCircle, Radio,
     AlertTriangle, HeartPulse, Calendar, Route,
-    Stethoscope, ClipboardList, FlaskConical, Syringe, Thermometer,
-    ChevronRight, Hash, CheckCircle2, XCircle
+    Stethoscope, ClipboardList, FlaskConical,
+    ChevronRight, Hash, CheckCircle2
 } from "lucide-react"
 import {
     LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -182,10 +182,10 @@ export default function Dashboard() {
     }
 
     return (
-        <div className="flex min-h-screen h-screen bg-[#F8FAFC] overflow-hidden font-sans">
+        <div className="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans">
 
             {/* Sidebar: HUD Navigation */}
-            <aside className="w-72 glass border-r border-white/50 flex flex-col h-full shrink-0 z-40 relative">
+            <aside className="w-72 glass border-r border-white/50 flex flex-col h-screen shrink-0 z-40">
                 <div className="p-8 pb-4 flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-[#0F172A] flex justify-center items-center shadow-lg relative">
                         <div className="absolute inset-0 rounded-full bg-[#00F5D4] animate-pulse opacity-40 blur-md"></div>
@@ -234,8 +234,9 @@ export default function Dashboard() {
             </aside>
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden relative">
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,#0F172A08_1px,transparent_1px),linear-gradient(to_bottom,#0F172A08_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none"></div>
+            <main className="flex-1 flex flex-col h-screen overflow-y-auto overflow-x-hidden relative">
+                {/* Fixed grid background — doesn't affect sticky */}
+                <div className="fixed inset-0 bg-[linear-gradient(to_right,#0F172A08_1px,transparent_1px),linear-gradient(to_bottom,#0F172A08_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none z-0" />
 
                 {/* Header HUD */}
                 <header className="h-24 px-10 flex justify-between items-center z-10 border-b border-gray-100 bg-white/40 backdrop-blur-md sticky top-0">
