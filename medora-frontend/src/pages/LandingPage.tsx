@@ -9,6 +9,7 @@ import { Link } from "react-router-dom"
 
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/Footer"
+import ImpactSection from "@/components/sections/ImpactSection"
 
 const agents = [
     { id: "audio", name: "Whisper ASR", role: "Transcription", icon: Mic, color: "text-blue-500", bg: "bg-blue-50", border: "border-blue-100" },
@@ -18,15 +19,6 @@ const agents = [
     { id: "prescription", name: "Rx Builder", role: "Prescriptions", icon: Pill, color: "text-amber-500", bg: "bg-amber-50", border: "border-amber-100" },
     { id: "safety", name: "OpenFDA Check", role: "Drug Interactions", icon: ShieldCheck, color: "text-red-500", bg: "bg-red-50", border: "border-red-100" },
     { id: "summary", name: "Patient Output", role: "Layman Summary", icon: Users, color: "text-cyan-500", bg: "bg-cyan-50", border: "border-cyan-100" },
-]
-
-const features = [
-    { title: "Verbatim Transcript", desc: "Pixel-perfect audio-to-text conversion.", icon: AudioWaveform },
-    { title: "SOAP Notes", desc: "Structured Subjective, Objective, Assessment, Plan.", icon: FileText },
-    { title: "ICD-11 Coding", desc: "Automated billing code suggestions.", icon: Database },
-    { title: "Smart Prescriptions", desc: "Dosage & frequency auto-formulated.", icon: Pill },
-    { title: "Drug Safety", desc: "Real-time OpenFDA interaction warnings.", icon: ShieldCheck },
-    { title: "Follow-ups", desc: "Automated patient reminder sequences.", icon: ActivitySquare },
 ]
 
 const howItWorksSteps = [
@@ -114,35 +106,86 @@ export default function LandingPage() {
 
             <main className="relative z-10 pt-24 md:pt-32 pb-20 px-6 max-w-7xl mx-auto">
                 {/* HERO SECTION */}
-                <section className="text-center md:pb-32 pb-20">
+                <section className="relative w-full md:py-32 py-20 flex flex-col md:flex-row items-center justify-between gap-12">
                     <motion.div
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
+                        className="flex-1 text-left"
+                        initial={{ opacity: 0, x: -50 }}
+                        animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.8, ease: "easeOut" }}
                     >
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-gray-200 mb-8 shadow-sm">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/60 backdrop-blur-md border border-gray-200 mb-8 shadow-sm">
                             <Sparkles className="w-4 h-4 text-[#00F5D4]" />
-                            <span className="text-sm font-medium text-[#64748B]">MedoraAI Healthcare Hackathon 2026</span>
+                            <span className="text-sm font-semibold text-[#0F172A] tracking-wide">MedoraAI Healthcare Hackathon 2026</span>
                         </div>
-                        <h1 className="font-serif text-5xl md:text-8xl font-normal tracking-tight mb-6 leading-tight">
-                            Ambient Clinical Note <br className="hidden md:block"/> 
-                            <span className="text-gradient-primary">Generator</span>
+                        <h1 className="font-serif text-6xl md:text-7xl lg:text-8xl font-normal tracking-tight mb-6 leading-tight text-[#0F172A]">
+                            Ambient Clinical <br className="hidden lg:block"/> 
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00F5D4] to-[#0F172A]">Note Generator</span>
                         </h1>
-                        <p className="text-lg md:text-xl text-[#64748B] max-w-3xl mx-auto mb-10 leading-relaxed font-sans">
-                            Convert doctor-patient consultation audio into structured clinical documentation instantly. 
+                        <p className="text-lg md:text-xl text-[#64748B] max-w-2xl mb-10 leading-relaxed font-sans font-medium">
+                            Convert doctor-patient consultation audio into highly structured clinical documentation instantly. 
                             Powered by a multi-agent LangGraph architecture with Gemini 1.5 Flash.
                         </p>
                         
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                            <Link to="/dashboard" className="h-14 px-8 text-lg font-medium rounded-full w-full sm:w-auto bg-[#0F172A] text-white hover:bg-[#0F172A]/90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#0F172A]/20">
+                        <div className="flex flex-col sm:flex-row items-center gap-5">
+                            <Link to="/dashboard" className="h-[60px] px-10 text-lg font-bold rounded-full w-full sm:w-auto bg-[#0F172A] text-white hover:bg-gray-800 hover:scale-105 transition-all flex items-center justify-center gap-3 shadow-[0_20px_40px_-15px_rgba(15,23,42,0.5)]">
                                 Try Live Demo
                                 <ArrowRight className="w-5 h-5 text-[#00F5D4]" />
                             </Link>
                             <button 
                                 onClick={() => document.getElementById('architecture')?.scrollIntoView({ behavior: 'smooth' })}
-                                className="h-14 px-8 text-lg font-medium rounded-full w-full sm:w-auto bg-white text-[#0F172A] border border-gray-200 hover:bg-gray-50 transition-all flex items-center justify-center shadow-sm">
+                                className="h-[60px] px-10 text-lg font-bold rounded-full w-full sm:w-auto bg-white text-[#0F172A] border-2 border-gray-200 hover:border-[#00F5D4]/50 hover:bg-[#00F5D4]/5 transition-all flex items-center justify-center shadow-sm">
                                 View Architecture
                             </button>
+                        </div>
+                    </motion.div>
+
+                    <motion.div 
+                        className="flex-1 w-full relative h-[500px] hidden md:block"
+                        initial={{ opacity: 0, scale: 0.9, x: 50 }}
+                        animate={{ opacity: 1, scale: 1, x: 0 }}
+                        transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+                    >
+                        {/* Abstract 3D/Glass Hero Art */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-[#00F5D4]/20 to-transparent rounded-[3rem] p-8 border border-white/40 shadow-2xl backdrop-blur-xl flex flex-col justify-between overflow-hidden">
+                            <div className="absolute top-[-50px] right-[-50px] w-64 h-64 bg-[#0F172A] rounded-full blur-[80px] opacity-10"></div>
+                            <div className="relative z-10 space-y-4">
+                                <div className="flex items-center gap-3 bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-white/50 shadow-sm w-[80%] transform -rotate-2">
+                                    <Mic className="w-6 h-6 text-[#0F172A]" />
+                                    <div className="flex flex-col">
+                                        <div className="h-2 w-24 bg-gray-200 rounded-full mb-2"></div>
+                                        <div className="h-2 w-32 bg-[#00F5D4]/40 rounded-full"></div>
+                                    </div>
+                                    <AudioWaveform className="w-6 h-6 text-[#00F5D4] ml-auto animate-pulse" />
+                                </div>
+                                <div className="flex items-center gap-3 bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-white/50 shadow-sm w-[75%] ml-auto transform rotate-1">
+                                    <ActivitySquare className="w-6 h-6 text-[#00F5D4]" />
+                                    <div className="flex flex-col w-full">
+                                        <div className="h-2 w-20 bg-gray-200 rounded-full mb-2"></div>
+                                        <div className="h-2 w-16 bg-gray-200 rounded-full"></div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3 bg-white/80 backdrop-blur-md p-4 rounded-2xl border border-white/50 shadow-sm w-[90%] transform -rotate-1 mt-4">
+                                    <FileText className="w-6 h-6 text-[#0F172A]" />
+                                    <div className="flex flex-col w-full">
+                                        <div className="h-2 w-full bg-gray-200 rounded-full mb-2"></div>
+                                        <div className="h-2 w-[80%] bg-gray-200 rounded-full mb-2"></div>
+                                        <div className="h-2 w-[60%] bg-[#00F5D4]/40 rounded-full"></div>
+                                    </div>
+                                    <ShieldCheck className="w-6 h-6 text-green-500 ml-auto" />
+                                </div>
+                            </div>
+                            
+                            <div className="relative z-10 bg-[#0F172A] p-6 rounded-3xl mt-12 text-white shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
+                                <div className="flex justify-between items-center mb-4">
+                                    <span className="text-sm font-semibold text-[#00F5D4]">Orchestration</span>
+                                    <span className="w-2 h-2 rounded-full bg-[#00F5D4] animate-ping"></span>
+                                </div>
+                                <div className="flex gap-2">
+                                    <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20"><Cpu className="w-5 h-5 text-white" /></div>
+                                    <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20"><Terminal className="w-5 h-5 text-white" /></div>
+                                    <div className="h-10 w-10 rounded-xl bg-[#00F5D4]/20 flex items-center justify-center border border-[#00F5D4]/50"><Zap className="w-5 h-5 text-[#00F5D4]" /></div>
+                                </div>
+                            </div>
                         </div>
                     </motion.div>
                 </section>
@@ -298,39 +341,10 @@ export default function LandingPage() {
                         </div>
                 </section>
 
-                {/* OUTPUTS GRID */}
-                <section className="py-24">
-                    <div className="flex flex-col md:flex-row gap-12 items-center mb-16">
-                        <div className="flex-1">
-                            <h2 className="font-serif text-4xl md:text-5xl mb-4">Comprehensive Clinical Outputs</h2>
-                            <p className="text-[#64748B] text-lg font-sans">
-                                From a single audio file, MedoraAI generates 7 distinct, highly structured clinical artifacts utilizing zero-token templating.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {features.map((feature, i) => (
-                            <motion.div 
-                                key={i}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: i * 0.1 }}
-                                className="glass bg-white/60 rounded-2xl p-8 hover:bg-white transition-colors border border-gray-200"
-                            >
-                                <div className="w-12 h-12 rounded-xl bg-[#F8FAFC] border border-gray-100 flex items-center justify-center mb-6 shadow-sm">
-                                    <feature.icon className="w-6 h-6 text-[#0F172A]" />
-                                </div>
-                                <h3 className="text-xl font-medium mb-2 text-[#0F172A]">{feature.title}</h3>
-                                <p className="text-[#64748B] leading-relaxed font-sans">{feature.desc}</p>
-                            </motion.div>
-                        ))}
-                    </div>
-                </section>
+                {/* COMPREHENSIVE OUTPUTS GRID REMOVED PER REQUEST */}
 
                 {/* TOKEN OPTIMIZATION STRATEGY */}
-                <section className="py-24 border-t border-gray-200">
+                <section className="py-24 border-t border-gray-200" id="optimization">
                     <div className="glass-card rounded-3xl p-8 md:p-12 overflow-hidden flex flex-col md:flex-row gap-12 items-center bg-white/60">
                         <div className="flex-1">
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 mb-6">
@@ -398,6 +412,7 @@ export default function LandingPage() {
                 </section>
             </main>
             
+            <ImpactSection />
             <Footer />
         </div>
     )

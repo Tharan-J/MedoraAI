@@ -40,6 +40,10 @@
   * {
     border-color: var(--color-border);
   }
+  html, body, #root {
+    height: 100%;
+    width: 100%;
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -117,5 +121,14 @@
       opacity: 1;
       filter: blur(0px);
     }
+  }
+
+  /* Hide scrollbar visually but keep scroll functional */
+  .hide-scrollbar {
+    scrollbar-width: none;       /* Firefox */
+    -ms-overflow-style: none;    /* IE/Edge */
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;               /* Chrome/Safari */
   }
 }

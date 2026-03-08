@@ -13,6 +13,14 @@ export default function Navbar() {
                     </div>
                     <span className="font-serif text-2xl tracking-tight text-[#0F172A]">Medora AI</span>
                 </Link>
+
+                <div className="hidden md:flex items-center gap-8 text-sm font-medium text-[#64748B]">
+                    <button onClick={() => document.getElementById('architecture')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-[#00F5D4] transition-colors">Architecture</button>
+                    <button onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-[#00F5D4] transition-colors">How it Works</button>
+                    <button onClick={() => document.getElementById('optimization')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-[#00F5D4] transition-colors">Optimization</button>
+                    <button onClick={() => document.getElementById('impact')?.scrollIntoView({ behavior: 'smooth' })} className="hover:text-[#00F5D4] transition-colors">Provider Impact</button>
+                </div>
+
                 <div className="flex items-center gap-6">
                     <Link to="/signin">
                         <Button variant="ghost" className="hidden sm:inline-flex text-[#0F172A] hover:bg-white/50 text-base font-medium">Sign In</Button>

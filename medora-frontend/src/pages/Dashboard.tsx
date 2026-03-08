@@ -4,22 +4,34 @@ import { motion, AnimatePresence } from "framer-motion"
 import {
     LayoutDashboard, UploadCloud, FileText, Pill,
     Users, Activity, BarChart3, Bell, Settings, LogOut, Mic,
-    ShieldCheck, Clock, FileAudio, StopCircle, Radio
+    ShieldCheck, Clock, FileAudio, StopCircle, Radio,
+    AlertTriangle, HeartPulse, Calendar, Route,
+    Stethoscope, ClipboardList, FlaskConical, Syringe, Thermometer,
+    ChevronRight, Hash, CheckCircle2, XCircle
 } from "lucide-react"
 import {
     LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
     BarChart, Bar
 } from "recharts"
+import RedFlagsTab from "@/components/dashboard/RedFlagsTab"
+import InsuranceTab from "@/components/dashboard/InsuranceTab"
+import BillingTab from "@/components/dashboard/BillingTab"
+import PatientJourneyTab from "@/components/dashboard/PatientJourneyTab"
+import { MOCK_SCAN_RESULT, MOCK_JOB_ID } from "@/lib/mockData"
 
 const sidebarItems = [
     { name: "Dashboard", id: "dashboard", icon: LayoutDashboard },
+    { name: "Patient Journey", id: "journey", icon: Route },
     { name: "Upload Consultation", id: "upload", icon: UploadCloud },
     { name: "Clinical Notes", id: "notes", icon: FileText },
-    { name: "Prescriptions", id: "prescriptions", icon: Pill },
+    { name: "Red Flag Monitor", id: "redflags", icon: AlertTriangle },
     { name: "Patient Summaries", id: "summaries", icon: Users },
     { name: "Follow-Ups", id: "followups", icon: Activity },
+    { name: "Insurance Report", id: "insurance", icon: HeartPulse },
+    { name: "Smart Billing", id: "billing", icon: Pill },
     { name: "Analytics", id: "analytics", icon: BarChart3 },
 ]
+
 
 const consultationData = [
     { name: "Mon", duration: 15 },
@@ -51,8 +63,9 @@ const PulsingDot = (props: any) => {
 export default function Dashboard() {
     const [activeTab, setActiveTab] = useState("dashboard")
     const [isProcessing, setIsProcessing] = useState(false)
-    const [hasData, setHasData] = useState(false) // Initially false
-    const [scanResult, setScanResult] = useState<any>(null)
+    const [hasData, setHasData] = useState(true)           // pre-loaded with demo data
+    const [scanResult, setScanResult] = useState<any>(MOCK_SCAN_RESULT)  // demo
+    const [jobId, setJobId] = useState<string | null>(MOCK_JOB_ID)       // demo
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const [isRecording, setIsRecording] = useState(false)
@@ -90,12 +103,13 @@ export default function Dashboard() {
 
         try {
             const uploadRes = await uploadAudio(file)
-            const jobId = uploadRes.job_id
+            const newJobId = uploadRes.job_id
+            setJobId(newJobId)
 
-            await generateNote(jobId)
+            await generateNote(newJobId)
 
             const interval = setInterval(async () => {
-                const statusInfo = await pollStatus(jobId)
+                const statusInfo = await pollStatus(newJobId)
                 if (statusInfo.status === "completed") {
                     clearInterval(interval)
                     setScanResult(statusInfo.result)
@@ -168,7 +182,7 @@ export default function Dashboard() {
     }
 
     return (
-        <div className="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans">
+        <div className="flex min-h-screen h-screen bg-[#F8FAFC] overflow-hidden font-sans">
 
             {/* Sidebar: HUD Navigation */}
             <aside className="w-72 glass border-r border-white/50 flex flex-col h-full shrink-0 z-40 relative">
@@ -220,7 +234,7 @@ export default function Dashboard() {
             </aside>
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col h-full overflow-hidden relative">
+            <main className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden relative">
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#0F172A08_1px,transparent_1px),linear-gradient(to_bottom,#0F172A08_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none"></div>
 
                 {/* Header HUD */}
@@ -293,9 +307,9 @@ export default function Dashboard() {
                     )}
                 </AnimatePresence>
 
-                <div className="flex-1 overflow-y-auto px-10 py-8 relative z-0 hide-scrollbar scroll-smooth">
+                <div className="flex-1 px-10 py-8 relative z-0">
                     <input type="file" ref={fileInputRef} className="hidden" accept="audio/*" onChange={handleFileUpload} />
-                    <div className="max-w-[1400px] mx-auto pb-32">
+                    <div className="max-w-[1400px] mx-auto pb-16">
                         <AnimatePresence mode="wait">
                             {/* === UPLOAD CONSULTATION === */}
                             {activeTab === "upload" && (
@@ -464,130 +478,294 @@ export default function Dashboard() {
                                             </p>
                                         </div>
                                     ) : hasData ? (
-                                        <motion.div className="grid lg:grid-cols-3 gap-8" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8 }}>
-                                            {/* Context Card */}
-                                            <motion.div
-                                                whileHover={{ y: -5, boxShadow: "0 20px 40px rgba(0,0,0,0.05)" }}
-                                                className="lg:col-span-1 glass-card rounded-[2rem] border-white shadow-sm p-8"
-                                            >
-                                                <h4 className="font-serif text-2xl text-[#0F172A] mb-6 flex items-center justify-between">
-                                                    Transcript
-                                                    <span className="text-[10px] font-sans font-bold bg-[#00F5D4]/20 text-[#0F172A] px-3 py-1 rounded-full border border-[#00F5D4]/40 uppercase tracking-widest">Whisper Agent</span>
-                                                </h4>
-                                                <div className="space-y-4 font-mono text-sm leading-relaxed text-[#0F172A]/80 max-h-96 overflow-y-auto pr-2">
-                                                    <p>{scanResult?.transcript || "No transcript generated."}</p>
-                                                </div>
-                                            </motion.div>
+                                        <motion.div className="space-y-8" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}>
 
-                                            {/* Outputs */}
-                                            <div className="lg:col-span-2 space-y-8 flex flex-col">
-                                                {/* SOAP Note generation animation */}
+                                            {/* ── TOP ROW: Transcript + Diagnosis Banner ── */}
+                                            <div className="grid lg:grid-cols-5 gap-6">
+                                                {/* Transcript Panel */}
                                                 <motion.div
-                                                    whileHover={{ y: -5, boxShadow: "0 20px 40px rgba(0,0,0,0.05)" }}
-                                                    className="glass-card rounded-[2rem] border-white shadow-sm p-8 flex-1"
+                                                    whileHover={{ y: -3, boxShadow: "0 20px 40px rgba(0,0,0,0.06)" }}
+                                                    className="lg:col-span-2 bg-[#0F172A] rounded-[2rem] p-7 flex flex-col"
                                                 >
-                                                    <h4 className="font-serif text-2xl text-[#0F172A] mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4">
-                                                        Structured Artifact
-                                                        <span className="text-[10px] font-sans font-bold bg-[#1E293B] text-white px-3 py-1 rounded-full border border-[#334155] uppercase tracking-widest">Clinical Extraction Agent</span>
-                                                    </h4>
-                                                    <div className="font-sans text-lg text-[#0F172A] leading-relaxed max-w-2xl whitespace-pre-wrap">
-                                                        {(
-                                                            scanResult?.soap_note
-                                                                ? (typeof scanResult.soap_note === 'string'
-                                                                    ? scanResult.soap_note
-                                                                    : Object.entries(scanResult.soap_note).map(([k, v]) => `${k.toUpperCase()}:\n${v}`).join('\n\n'))
-                                                                : "Generating structural artifact..."
-                                                        ).split(" ").map((word: string, i: number) => (
-                                                            <span
-                                                                key={i}
-                                                                className="typewriter-word"
-                                                                style={{ animationDelay: `${i * 0.05}s` }}
-                                                            >
-                                                                {word}&nbsp;
-                                                            </span>
-                                                        ))}
+                                                    <div className="flex items-center justify-between mb-5">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-8 h-8 rounded-xl bg-[#00F5D4]/20 flex items-center justify-center">
+                                                                <FileAudio className="w-4 h-4 text-[#00F5D4]" />
+                                                            </div>
+                                                            <span className="font-bold text-white text-sm">Audio Transcript</span>
+                                                        </div>
+                                                        <span className="text-[10px] font-bold bg-[#00F5D4]/20 text-[#00F5D4] px-2.5 py-1 rounded-full border border-[#00F5D4]/30 uppercase tracking-widest">Whisper</span>
+                                                    </div>
+                                                    <div className="flex-1 font-mono text-xs leading-relaxed text-gray-300 max-h-52 overflow-y-auto pr-1 scrollbar-thin">
+                                                        {scanResult?.transcript
+                                                            ? scanResult.transcript.split(/[.!?]+/).filter(Boolean).map((sent: string, i: number) => (
+                                                                <p key={i} className="mb-2 text-gray-300 leading-relaxed">
+                                                                    <span className="text-[#00F5D4] mr-1.5">›</span>{sent.trim()}.
+                                                                </p>
+                                                            ))
+                                                            : <p className="text-gray-500 italic">No transcript available.</p>}
                                                     </div>
                                                 </motion.div>
 
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                    {/* Prescription Verification */}
-                                                    <motion.div
-                                                        whileHover={{ y: -5, boxShadow: "0 20px 40px rgba(0,0,0,0.05)" }}
-                                                        className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-8 relative overflow-hidden"
-                                                    >
-                                                        <div className="absolute top-0 left-0 w-2 h-full bg-[#0F172A]"></div>
-                                                        <h5 className="font-bold text-[#64748B] text-xs tracking-widest uppercase mb-6 flex justify-between items-center">
-                                                            Prescription Plan
+                                                {/* Diagnosis + Entities */}
+                                                <motion.div
+                                                    whileHover={{ y: -3, boxShadow: "0 20px 40px rgba(0,0,0,0.06)" }}
+                                                    className="lg:col-span-3 bg-white rounded-[2rem] border border-gray-100 shadow-sm p-7"
+                                                >
+                                                    <div className="flex items-center justify-between mb-5">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-8 h-8 rounded-xl bg-violet-50 flex items-center justify-center">
+                                                                <Stethoscope className="w-4 h-4 text-violet-600" />
+                                                            </div>
+                                                            <span className="font-bold text-[#0F172A] text-sm">Clinical Impression</span>
+                                                        </div>
+                                                        <span className="text-[10px] font-bold bg-[#1E293B] text-white px-2.5 py-1 rounded-full uppercase tracking-widest">Extraction Agent</span>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        {([
+                                                            { label: "Diagnosis", value: scanResult?.extracted_entities?.diagnosis, accent: "bg-violet-50 border-violet-100 text-violet-800" },
+                                                            { label: "Chief Complaint", value: scanResult?.extracted_entities?.chief_complaint, accent: "bg-blue-50 border-blue-100 text-blue-800" },
+                                                            { label: "Symptoms", value: Array.isArray(scanResult?.extracted_entities?.symptoms) ? scanResult.extracted_entities.symptoms.join(" · ") : scanResult?.extracted_entities?.symptoms, accent: "bg-amber-50 border-amber-100 text-amber-800" },
+                                                            { label: "Tests Recommended", value: Array.isArray(scanResult?.extracted_entities?.tests_recommended) ? scanResult.extracted_entities.tests_recommended.join(", ") : scanResult?.extracted_entities?.tests_recommended, accent: "bg-teal-50 border-teal-100 text-teal-800" },
+                                                        ] as { label: string; value: any; accent: string }[]).map(({ label, value, accent }) => (
+                                                            <div key={label} className={`rounded-xl border p-4 ${accent}`}>
+                                                                <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-1">{label}</p>
+                                                                <p className="text-sm font-semibold leading-snug">{value || "—"}</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </motion.div>
+                                            </div>
 
-                                                            {/* Snap Rotation Animation for Shield */}
+                                            {/* ── SOAP NOTE: 4 Color-coded Cards ── */}
+                                            <div>
+                                                <div className="flex items-center gap-3 mb-4">
+                                                    <ClipboardList className="w-5 h-5 text-[#0F172A]" />
+                                                    <h4 className="font-bold text-[#0F172A] text-sm uppercase tracking-widest">SOAP Note</h4>
+                                                    <div className="flex-1 h-px bg-gray-100" />
+                                                    <span className="text-[10px] font-bold bg-[#1E293B] text-white px-2.5 py-1 rounded-full uppercase tracking-widest">Clinical Extraction Agent</span>
+                                                </div>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                                    {([
+                                                        {
+                                                            key: "subjective",
+                                                            label: "Subjective",
+                                                            desc: "Patient-reported symptoms",
+                                                            icon: Mic,
+                                                            bg: "bg-blue-50",
+                                                            border: "border-blue-200",
+                                                            iconBg: "bg-blue-100",
+                                                            iconColor: "text-blue-700",
+                                                            tagColor: "bg-blue-100 text-blue-700",
+                                                        },
+                                                        {
+                                                            key: "objective",
+                                                            label: "Objective",
+                                                            desc: "Clinical observations & vitals",
+                                                            icon: FlaskConical,
+                                                            bg: "bg-emerald-50",
+                                                            border: "border-emerald-200",
+                                                            iconBg: "bg-emerald-100",
+                                                            iconColor: "text-emerald-700",
+                                                            tagColor: "bg-emerald-100 text-emerald-700",
+                                                        },
+                                                        {
+                                                            key: "assessment",
+                                                            label: "Assessment",
+                                                            desc: "Diagnosis & clinical judgement",
+                                                            icon: Stethoscope,
+                                                            bg: "bg-violet-50",
+                                                            border: "border-violet-200",
+                                                            iconBg: "bg-violet-100",
+                                                            iconColor: "text-violet-700",
+                                                            tagColor: "bg-violet-100 text-violet-700",
+                                                        },
+                                                        {
+                                                            key: "plan",
+                                                            label: "Plan",
+                                                            desc: "Treatment & follow-up actions",
+                                                            icon: ClipboardList,
+                                                            bg: "bg-orange-50",
+                                                            border: "border-orange-200",
+                                                            iconBg: "bg-orange-100",
+                                                            iconColor: "text-orange-700",
+                                                            tagColor: "bg-orange-100 text-orange-700",
+                                                        },
+                                                    ] as { key: string; label: string; desc: string; icon: any; bg: string; border: string; iconBg: string; iconColor: string; tagColor: string }[]).map(({ key, label, desc, icon: Icon, bg, border, iconBg, iconColor, tagColor }, i) => {
+                                                        const rawVal = scanResult?.soap_note?.[key] ?? scanResult?.soap_note?.[key.charAt(0).toUpperCase() + key.slice(1)];
+                                                        const val = typeof rawVal === 'string' ? rawVal : (rawVal ? JSON.stringify(rawVal) : null);
+                                                        return (
                                                             <motion.div
-                                                                initial={{ rotate: -180, scale: 0 }}
-                                                                animate={{ rotate: 0, scale: 1 }}
-                                                                transition={{ type: "spring", stiffness: 200, damping: 15, delay: 1 }}
-                                                                className={`flex items-center gap-1.5 px-2 py-1 rounded-md ${Array.isArray(scanResult?.drug_interactions) && scanResult?.drug_interactions?.length > 0
-                                                                    ? "text-red-600 bg-red-100"
-                                                                    : "text-[#00F5D4] bg-[#00F5D4]/10"
-                                                                    }`}
+                                                                key={key}
+                                                                initial={{ opacity: 0, y: 12 }}
+                                                                animate={{ opacity: 1, y: 0 }}
+                                                                transition={{ delay: i * 0.08 }}
+                                                                whileHover={{ y: -3, boxShadow: "0 16px 32px rgba(0,0,0,0.06)" }}
+                                                                className={`rounded-2xl border p-6 ${bg} ${border}`}
                                                             >
-                                                                <ShieldCheck className="w-4 h-4" />
-                                                                <span className="font-semibold text-xs text-[#0F172A]">
-                                                                    {Array.isArray(scanResult?.drug_interactions) && scanResult?.drug_interactions?.length > 0 ? "WARNING" : "VERIFIED SAFE"}
-                                                                </span>
-                                                            </motion.div>
-                                                        </h5>
-                                                        <div className="space-y-3">
-                                                            {Array.isArray(scanResult?.prescription) && scanResult.prescription.length > 0 ? (
-                                                                scanResult.prescription.map((rx: any, idx: number) => (
-                                                                    <div key={idx} className="p-4 border border-gray-200 rounded-xl bg-[#F8FAFC]">
-                                                                        <p className="font-bold text-[#0F172A] text-lg">
-                                                                            {typeof rx === 'string' ? rx : (rx?.medication || "Unknown Prescription")}
-                                                                        </p>
-                                                                        {typeof rx !== 'string' && (rx?.dosage || rx?.frequency) && (
-                                                                            <p className="text-sm text-[#64748B] mt-1">
-                                                                                {[rx?.dosage, rx?.frequency, rx?.duration ? `x ${rx.duration}` : null].filter(Boolean).join(' ')}
-                                                                            </p>
-                                                                        )}
+                                                                <div className="flex items-center gap-3 mb-4">
+                                                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${iconBg}`}>
+                                                                        <Icon className={`w-4.5 h-4.5 ${iconColor}`} />
                                                                     </div>
-                                                                ))
-                                                            ) : typeof scanResult?.prescription === 'string' ? (
-                                                                <div className="p-4 border border-gray-200 rounded-xl bg-[#F8FAFC]">
-                                                                    <p className="font-bold text-[#0F172A] text-lg">{scanResult.prescription}</p>
+                                                                    <div>
+                                                                        <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md ${tagColor}`}>{label}</span>
+                                                                        <p className="text-[11px] text-gray-500 mt-0.5">{desc}</p>
+                                                                    </div>
                                                                 </div>
-                                                            ) : (
-                                                                <div className="p-4 border border-gray-200 rounded-xl bg-[#F8FAFC]">
-                                                                    <p className="font-bold text-[#0F172A] text-lg">No Prescriptions</p>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </motion.div>
-
-                                                    <motion.div
-                                                        whileHover={{ y: -5, boxShadow: "0 20px 40px rgba(0,0,0,0.05)" }}
-                                                        className="glass-card rounded-[2rem] border-white shadow-sm p-8"
-                                                    >
-                                                        <h5 className="font-bold text-[#64748B] text-xs tracking-widest uppercase mb-6">ICD-11 Assignments</h5>
-                                                        <div className="space-y-3">
-                                                            {Array.isArray(scanResult?.icd_codes) && scanResult.icd_codes.length > 0 ? (
-                                                                scanResult.icd_codes.map((code: string, idx: number) => {
-                                                                    const [id, ...rest] = typeof code === 'string' ? code.split(' ') : ["-", JSON.stringify(code)]
-                                                                    return (
-                                                                        <div key={idx} className="flex items-start gap-4 p-3 hover:bg-white rounded-xl transition-colors">
-                                                                            <span className="bg-[#0F172A] text-white px-2 py-0.5 rounded text-xs font-mono shrink-0">{id || "-"}</span>
-                                                                            <span className="text-sm font-semibold text-[#0F172A]">{rest.join(' ') || code}</span>
-                                                                        </div>
-                                                                    )
-                                                                })
-                                                            ) : typeof scanResult?.icd_codes === 'string' ? (
-                                                                <div className="p-3 bg-[#F8FAFC] rounded-xl text-sm font-semibold text-[#0F172A]">
-                                                                    {scanResult.icd_codes}
-                                                                </div>
-                                                            ) : (
-                                                                <div className="text-sm text-[#64748B]">No ICD codes identified.</div>
-                                                            )}
-                                                        </div>
-                                                    </motion.div>
+                                                                <p className="text-sm text-gray-800 leading-relaxed font-medium">
+                                                                    {val || <span className="text-gray-400 italic">Not generated</span>}
+                                                                </p>
+                                                            </motion.div>
+                                                        )
+                                                    })}
                                                 </div>
                                             </div>
+
+                                            {/* ── BOTTOM ROW: Prescription + ICD + Drug Interactions ── */}
+                                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                                                {/* Prescription Cards */}
+                                                <motion.div
+                                                    whileHover={{ y: -3, boxShadow: "0 20px 40px rgba(0,0,0,0.06)" }}
+                                                    className="lg:col-span-1 bg-white rounded-[2rem] border border-gray-100 shadow-sm p-7"
+                                                >
+                                                    <div className="flex items-center justify-between mb-5">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-8 h-8 rounded-xl bg-cyan-50 flex items-center justify-center">
+                                                                <Pill className="w-4 h-4 text-cyan-600" />
+                                                            </div>
+                                                            <span className="font-bold text-[#0F172A] text-sm">Prescription Plan</span>
+                                                        </div>
+                                                        <motion.div
+                                                            initial={{ scale: 0 }} animate={{ scale: 1 }}
+                                                            transition={{ type: "spring", stiffness: 300, damping: 15, delay: 0.5 }}
+                                                            className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold ${
+                                                                Array.isArray(scanResult?.drug_interactions) && scanResult.drug_interactions.length > 0
+                                                                    ? "bg-red-100 text-red-700"
+                                                                    : "bg-[#00F5D4]/15 text-[#0F172A]"
+                                                            }`}
+                                                        >
+                                                            <ShieldCheck className="w-3.5 h-3.5" />
+                                                            {Array.isArray(scanResult?.drug_interactions) && scanResult.drug_interactions.length > 0 ? "⚠ Flag" : "Safe"}
+                                                        </motion.div>
+                                                    </div>
+                                                    <div className="space-y-3">
+                                                        {Array.isArray(scanResult?.prescription) && scanResult.prescription.length > 0 ? (
+                                                            scanResult.prescription.map((rx: any, idx: number) => {
+                                                                const name = typeof rx === 'string' ? rx : (rx?.medication || rx?.drug_name || "Unknown")
+                                                                const dose = typeof rx !== 'string' ? rx?.dosage : null
+                                                                const freq = typeof rx !== 'string' ? rx?.frequency : null
+                                                                const dur  = typeof rx !== 'string' ? rx?.duration : null
+                                                                return (
+                                                                    <motion.div key={idx}
+                                                                        initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                                                                        transition={{ delay: idx * 0.07 }}
+                                                                        className="flex items-start gap-3 p-3.5 bg-[#F8FAFC] border border-gray-100 rounded-xl"
+                                                                    >
+                                                                        <div className="w-7 h-7 rounded-lg bg-cyan-100 flex items-center justify-center shrink-0 mt-0.5">
+                                                                            <Pill className="w-3.5 h-3.5 text-cyan-700" />
+                                                                        </div>
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <p className="font-bold text-[#0F172A] text-sm truncate">{name}</p>
+                                                                            {(dose || freq || dur) && (
+                                                                                <div className="flex flex-wrap gap-1 mt-1.5">
+                                                                                    {dose && <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">{dose}</span>}
+                                                                                    {freq && <span className="text-[10px] font-bold px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">{freq}</span>}
+                                                                                    {dur  && <span className="text-[10px] font-bold px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full">{dur}</span>}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </motion.div>
+                                                                )
+                                                            })
+                                                        ) : (
+                                                            <div className="flex items-center gap-2 py-6 justify-center text-[#94A3B8] text-sm">
+                                                                <Pill className="w-4 h-4" /> No prescriptions
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </motion.div>
+
+                                                {/* ICD Codes */}
+                                                <motion.div
+                                                    whileHover={{ y: -3, boxShadow: "0 20px 40px rgba(0,0,0,0.06)" }}
+                                                    className="lg:col-span-1 bg-white rounded-[2rem] border border-gray-100 shadow-sm p-7"
+                                                >
+                                                    <div className="flex items-center gap-2 mb-5">
+                                                        <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center">
+                                                            <Hash className="w-4 h-4 text-indigo-600" />
+                                                        </div>
+                                                        <span className="font-bold text-[#0F172A] text-sm">ICD-11 Codes</span>
+                                                    </div>
+                                                    <div className="space-y-2.5">
+                                                        {Array.isArray(scanResult?.icd_codes) && scanResult.icd_codes.length > 0 ? (
+                                                            scanResult.icd_codes.map((code: any, idx: number) => {
+                                                                const str = typeof code === 'string' ? code : JSON.stringify(code)
+                                                                const [id, ...rest] = str.split(' ')
+                                                                return (
+                                                                    <motion.div key={idx}
+                                                                        initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                                                                        transition={{ delay: idx * 0.07 }}
+                                                                        className="flex items-center gap-3 p-3 hover:bg-indigo-50 rounded-xl transition-colors group"
+                                                                    >
+                                                                        <span className="shrink-0 bg-[#0F172A] group-hover:bg-indigo-700 text-white px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-colors">{id || "–"}</span>
+                                                                        <span className="text-xs font-semibold text-[#0F172A] leading-tight">{rest.join(' ') || str}</span>
+                                                                        <ChevronRight className="w-3 h-3 text-gray-300 ml-auto shrink-0" />
+                                                                    </motion.div>
+                                                                )
+                                                            })
+                                                        ) : (
+                                                            <div className="flex items-center gap-2 py-6 justify-center text-[#94A3B8] text-sm">
+                                                                <Hash className="w-4 h-4" /> No codes identified
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </motion.div>
+
+                                                {/* Drug Interactions */}
+                                                <motion.div
+                                                    whileHover={{ y: -3, boxShadow: "0 20px 40px rgba(0,0,0,0.06)" }}
+                                                    className="lg:col-span-1 bg-white rounded-[2rem] border border-gray-100 shadow-sm p-7"
+                                                >
+                                                    <div className="flex items-center gap-2 mb-5">
+                                                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                                                            Array.isArray(scanResult?.drug_interactions) && scanResult.drug_interactions.length > 0
+                                                                ? "bg-red-50"
+                                                                : "bg-green-50"
+                                                        }`}>
+                                                            <AlertTriangle className={`w-4 h-4 ${
+                                                                Array.isArray(scanResult?.drug_interactions) && scanResult.drug_interactions.length > 0
+                                                                    ? "text-red-600"
+                                                                    : "text-green-600"
+                                                            }`} />
+                                                        </div>
+                                                        <span className="font-bold text-[#0F172A] text-sm">Drug Interactions</span>
+                                                    </div>
+                                                    {Array.isArray(scanResult?.drug_interactions) && scanResult.drug_interactions.length > 0 ? (
+                                                        <div className="space-y-3">
+                                                            {scanResult.drug_interactions.map((w: any, idx: number) => (
+                                                                <motion.div key={idx}
+                                                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                                                    transition={{ delay: idx * 0.08 }}
+                                                                    className="p-3.5 bg-red-50 border border-red-200 rounded-xl"
+                                                                >
+                                                                    <p className="text-xs font-bold text-red-800">{w.drug_pair || w}</p>
+                                                                    {w.description && <p className="text-[11px] text-red-600 mt-1 leading-snug">{w.description}</p>}
+                                                                </motion.div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                                                            <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mb-3">
+                                                                <CheckCircle2 className="w-6 h-6 text-green-500" />
+                                                            </div>
+                                                            <p className="text-sm font-semibold text-green-700">No interactions detected</p>
+                                                            <p className="text-xs text-green-500 mt-1">All medications are safe together</p>
+                                                        </div>
+                                                    )}
+                                                </motion.div>
+                                            </div>
+
                                         </motion.div>
                                     ) : (
                                         <div className="flex justify-center py-32">
@@ -597,8 +775,105 @@ export default function Dashboard() {
                                 </motion.div>
                             )}
 
+                            {/* === RED FLAG MONITOR === */}
+                            {activeTab === "redflags" && <RedFlagsTab scanResult={scanResult} />}
+
+                            {/* === PATIENT SUMMARIES === */}
+                            {activeTab === "summaries" && (
+                                <motion.div key="summaries" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-8">
+                                    <h2 className="font-serif text-5xl text-[#0F172A] mb-2">Patient Summaries</h2>
+                                    <p className="text-[#64748B] font-sans mb-8">Plain-language after-visit summaries auto-generated for patients.</p>
+                                    {scanResult?.patient_summary ? (
+                                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                                            <div className="bg-gradient-to-br from-[#0F172A] to-[#1E293B] text-white rounded-3xl p-8">
+                                                <p className="text-xs text-[#00F5D4] font-bold uppercase tracking-widest mb-3">Clinical Report</p>
+                                                <h3 className="font-serif text-2xl mb-4">For: {scanResult.extracted_entities?.patient_name || "Patient"}</h3>
+                                                <p className="text-gray-300 leading-relaxed">{scanResult.patient_summary}</p>
+                                            </div>
+                                            <div className="bg-green-50 border border-green-100 rounded-3xl p-8">
+                                                <p className="text-xs text-green-600 font-bold uppercase tracking-widest mb-3">🌿 Patient-Friendly Version</p>
+                                                <h3 className="font-bold text-xl text-green-900 mb-4">What happened at your visit today</h3>
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <p className="font-bold text-green-800 text-sm mb-1">What you have:</p>
+                                                        <p className="text-green-700">{scanResult.extracted_entities?.diagnosis || "See your doctor's notes"}</p>
+                                                    </div>
+                                                    {Array.isArray(scanResult.prescription) && scanResult.prescription.length > 0 && (
+                                                        <div>
+                                                            <p className="font-bold text-green-800 text-sm mb-2">What to do:</p>
+                                                            <ul className="space-y-1">
+                                                                {scanResult.prescription.map((rx: any, i: number) => (
+                                                                    <li key={i} className="flex items-start gap-2 text-green-700">
+                                                                        <span className="text-green-400 mt-1">•</span>
+                                                                        <span>Take {typeof rx === "string" ? rx : `${rx?.medication} ${rx?.dosage || ""} ${rx?.frequency || ""}`.trim()}</span>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    )}
+                                                    <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
+                                                        <p className="font-bold text-amber-800 text-sm mb-1">⚠ When to call your doctor:</p>
+                                                        <p className="text-amber-700 text-sm">Call if symptoms worsen, you develop new symptoms, or you have concerns about your medications.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-3 justify-end">
+                                                <button onClick={() => window.print()} className="h-11 px-6 rounded-full border-2 border-[#0F172A] text-[#0F172A] font-bold hover:bg-[#0F172A] hover:text-white transition-all text-sm">Print Summary</button>
+                                            </div>
+                                        </motion.div>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center py-32 border-2 border-dashed border-gray-200 rounded-3xl">
+                                            <Users className="w-12 h-12 text-gray-300 mb-4" />
+                                            <p className="text-[#64748B] font-medium">Process a consultation to generate the patient summary.</p>
+                                            <button onClick={() => setActiveTab("upload")} className="mt-6 bg-[#0F172A] text-white px-6 h-11 rounded-full font-bold text-sm hover:bg-gray-800 transition-colors">Go to Upload</button>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            )}
+
+                            {/* === FOLLOW-UPS === */}
+                            {activeTab === "followups" && (
+                                <motion.div key="followups" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-8">
+                                    <h2 className="font-serif text-5xl text-[#0F172A] mb-2">Follow-Up Reminders</h2>
+                                    <p className="text-[#64748B] font-sans mb-8">AI-generated follow-up action items from the latest consultation.</p>
+                                    {Array.isArray(scanResult?.followups) && scanResult.followups.length > 0 ? (
+                                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                                            {scanResult.followups.map((fu: any, i: number) => (
+                                                <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }}
+                                                    className="flex items-start gap-6 bg-white border border-gray-100 shadow-sm rounded-2xl p-6">
+                                                    <div className="w-12 h-12 rounded-xl bg-[#00F5D4]/10 flex items-center justify-center shrink-0 border border-[#00F5D4]/20">
+                                                        <Calendar className="w-6 h-6 text-[#0F172A]" />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="font-semibold text-[#0F172A] text-base">{typeof fu === "string" ? fu : fu?.message}</p>
+                                                        {fu?.date && <p className="text-sm text-[#64748B] mt-1">📅 {fu.date}</p>}
+                                                        {fu?.type && <span className="inline-block mt-2 text-xs font-bold px-3 py-1 rounded-full bg-[#F1F5F9] text-[#64748B] uppercase tracking-widest">{fu.type}</span>}
+                                                    </div>
+                                                </motion.div>
+                                            ))}
+                                        </motion.div>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center py-32 border-2 border-dashed border-gray-200 rounded-3xl">
+                                            <Activity className="w-12 h-12 text-gray-300 mb-4" />
+                                            <p className="text-[#64748B] font-medium">No follow-ups generated yet. Process a consultation first.</p>
+                                            <button onClick={() => setActiveTab("upload")} className="mt-6 bg-[#0F172A] text-white px-6 h-11 rounded-full font-bold text-sm hover:bg-gray-800 transition-colors">Go to Upload</button>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            )}
+
+                            {/* === INSURANCE REPORT === */}
+                            {activeTab === "insurance" && <InsuranceTab scanResult={scanResult} jobId={jobId} providerName={providerName} />}
+
+                            {/* === SMART BILLING === */}
+                            {activeTab === "billing" && <BillingTab jobId={jobId} />}
+
+                            {/* === PATIENT JOURNEY WIZARD === */}
+                            {activeTab === "journey" && <PatientJourneyTab providerName={providerName} />}
+
                             {/* === ANALYTICS PANE === */}
                             {activeTab === "analytics" && (
+
                                 <motion.div
                                     key="analytics"
                                     initial={{ opacity: 0, scale: 0.98 }}

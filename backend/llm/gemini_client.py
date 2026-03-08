@@ -18,7 +18,7 @@ def _get_model_name():
 _GENERATION_CONFIG = types.GenerateContentConfig(
     temperature=0.1,        # Near-deterministic — critical for medical outputs
     top_p=0.8,
-    max_output_tokens=1024, # Hard cap to avoid expensive runaway generation
+    max_output_tokens=4096, # Enough for full SOAP+ICD+Rx JSON responses
     safety_settings=[
         types.SafetySetting(
             category="HARM_CATEGORY_DANGEROUS_CONTENT",

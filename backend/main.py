@@ -4,17 +4,21 @@ Exposes REST endpoints for audio upload, note generation, and analytics.
 """
 
 import os
+import json
 import uuid
 import shutil
 import logging
 from pathlib import Path
+from typing import Optional
 
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 from backend.workflow import clinical_workflow
 from backend.agents.analytics_agent import AnalyticsAgent
+from backend.llm.gemini_client import get_gemini_response
 
 # ── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -31,7 +35,7 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 app = FastAPI(
     title="Ambient Clinical Note Generator API",
     description="Agentic AI system that converts consultation audio into structured clinical documentation.",
-    version="1.0.0",
+    version="2.0.0",
 )
 
 app.add_middleware(
@@ -47,6 +51,22 @@ app.add_middleware(
 _jobs: dict[str, dict] = {}
 
 
+# ── Request/Response Models ───────────────────────────────────────────────────
+class RedFlagRequest(BaseModel):
+    transcript: str
+
+class InsuranceReportRequest(BaseModel):
+    job_id: str
+    patient_name: Optional[str] = "Anonymous"
+    patient_age: Optional[str] = ""
+    date_of_visit: Optional[str] = ""
+    clinic_name: Optional[str] = "Medora AI Clinic"
+    doctor_name: Optional[str] = "Dr. Jenkins"
+
+class BillingCodeRequest(BaseModel):
+    job_id: str
+    consultation_minutes: Optional[int] = 10
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Endpoints
 # ─────────────────────────────────────────────────────────────────────────────
@@ -54,7 +74,7 @@ _jobs: dict[str, dict] = {}
 @app.get("/health")
 async def health():
     """Health check endpoint."""
-    return {"status": "ok", "service": "Ambient Clinical Note Generator"}
+    return {"status": "ok", "service": "Ambient Clinical Note Generator v2"}
 
 
 @app.post("/upload_audio")
@@ -135,6 +155,142 @@ async def get_status(job_id: str):
 async def get_analytics():
     """Return aggregate analytics across all processed consultations."""
     return AnalyticsAgent.get_aggregate()
+
+
+@app.post("/detect_redflags")
+async def detect_redflags(req: RedFlagRequest):
+    """
+    Analyze a transcript for medical red flags using Gemini.
+    Returns a list of potential red flags with symptoms, possible conditions, and suggested actions.
+    """
+    if not req.transcript or len(req.transcript.strip()) < 20:
+        return {"red_flags": []}
+
+    RF_SCHEMA = [
+        {
+            "symptom": "example symptom",
+            "possible_conditions": ["Condition A", "Condition B"],
+            "severity": "HIGH | MEDIUM | LOW",
+            "suggested_action": "Suggested test or referral"
+        }
+    ]
+
+    prompt = f"""You are a clinical AI assistant trained for medical red flag detection.
+
+Analyze the following doctor-patient consultation transcript and identify any medical red flags.
+A red flag is a symptom or combination of symptoms that may indicate a serious underlying condition.
+
+Return ONLY a valid JSON array matching this schema:
+{json.dumps(RF_SCHEMA, indent=2)}
+
+Rules:
+- Only include HIGH or MEDIUM confidence red flags
+- Be clinically conservative — only flag genuinely concerning symptoms
+- Maximum 5 red flags
+- If none found, return an empty array: []
+
+Transcript:
+{req.transcript}
+
+Return only the JSON array, no explanation:"""
+
+    try:
+        raw = get_gemini_response(prompt)
+        cleaned = raw.strip()
+        if cleaned.startswith("```"):
+            lines = cleaned.split("\n")
+            lines = [l for l in lines if not l.startswith("```")]
+            cleaned = "\n".join(lines).strip()
+        red_flags = json.loads(cleaned)
+        if not isinstance(red_flags, list):
+            red_flags = []
+    except Exception as e:
+        logger.error(f"Red flag detection failed: {e}")
+        red_flags = []
+
+    return {"red_flags": red_flags}
+
+
+@app.post("/insurance_report")
+async def insurance_report(req: InsuranceReportRequest):
+    """Generate a preformatted insurance-ready document from a completed job."""
+    job = _jobs.get(req.job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail=f"Job '{req.job_id}' not found.")
+    if job["status"] != "completed":
+        raise HTTPException(status_code=400, detail="Job is not yet completed.")
+
+    result = job.get("result", {})
+    entities = result.get("extracted_entities", {})
+    soap = result.get("soap_note", {})
+    icd = result.get("icd_codes", [])
+    prescription = result.get("prescription", [])
+    followups = result.get("followups", [])
+
+    report = {
+        "patient_name": req.patient_name,
+        "patient_age": req.patient_age,
+        "date_of_visit": req.date_of_visit,
+        "clinic_name": req.clinic_name,
+        "attending_physician": req.doctor_name,
+        "chief_complaint": entities.get("chief_complaint", "N/A"),
+        "diagnosis": entities.get("diagnosis", "N/A"),
+        "symptoms": entities.get("symptoms", []),
+        "investigations_ordered": entities.get("tests_recommended", []),
+        "treatment_provided": soap.get("plan", "See SOAP note for details"),
+        "prescribed_medications": prescription,
+        "icd_codes": icd,
+        "follow_up_plan": followups,
+        "ai_disclaimer": result.get("ai_disclaimer", "AI Generated — Requires Doctor Review"),
+        "generated_at": "2026-03-08",
+    }
+
+    return {"report": report}
+
+
+@app.post("/billing_codes")
+async def billing_codes(req: BillingCodeRequest):
+    """Generate suggested CPT and ICD billing codes based on job result."""
+    job = _jobs.get(req.job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail=f"Job '{req.job_id}' not found.")
+    if job["status"] != "completed":
+        raise HTTPException(status_code=400, detail="Job is not yet completed.")
+
+    result = job.get("result", {})
+    entities = result.get("extracted_entities", {})
+    icd_codes = result.get("icd_codes", [])
+    diagnosis = entities.get("diagnosis", "")
+    medications = entities.get("medications", [])
+    symptoms = entities.get("symptoms", [])
+    minutes = req.consultation_minutes
+
+    # Determine E/M level from complexity
+    complexity = "low"
+    if len(symptoms) > 3 or len(medications) > 2:
+        complexity = "moderate"
+    if len(symptoms) > 6 or len(medications) > 4:
+        complexity = "high"
+
+    em_map = {
+        "low": {"code": "99213", "level": "Level 3", "desc": "Established patient, low medical decision making"},
+        "moderate": {"code": "99214", "level": "Level 4", "desc": "Established patient, moderate medical decision making"},
+        "high": {"code": "99215", "level": "Level 5", "desc": "Established patient, high medical decision making"},
+    }
+
+    em = em_map[complexity]
+
+    return {
+        "em_code": em,
+        "icd10_codes": icd_codes,
+        "justification": {
+            "consultation_minutes": minutes,
+            "complexity": complexity,
+            "symptoms_reviewed": len(symptoms),
+            "medications_managed": len(medications),
+            "diagnosis": diagnosis,
+        }
+    }
 
 
 # ─────────────────────────────────────────────────────────────────────────────
