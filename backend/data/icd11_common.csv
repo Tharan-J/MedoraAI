@@ -1,0 +1,50 @@
+code,title
+1C1Z,Viral fever, unspecified
+1C10,Influenza due to identified seasonal influenza virus
+1C11,Influenza due to identified zoonotic or pandemic influenza virus
+BA00,Essential hypertension
+BA01,Hypertensive heart disease
+5A11,Type 1 diabetes mellitus
+5A10,Type 2 diabetes mellitus
+CA80,Asthma
+CA22,Chronic obstructive pulmonary disease
+BC43,Acute myocardial infarction
+BC55,Heart failure
+MG22,Sepsis
+1E30,Urinary tract infection
+1F00,Pneumonia
+JA00,Acute gastroenteritis
+DA91,Peptic ulcer disease
+FA24,Migraine headache
+NA07,Low back pain
+FA80,Acute bronchitis
+MH10,Iron deficiency anaemia
+5B81,Obesity
+MH11,Vitamin B12 deficiency anaemia
+5A00,Hypothyroidism
+5A01,Hyperthyroidism
+3A51,Allergic rhinitis
+1C20,COVID-19
+CA0Z,Upper respiratory tract infection
+JD20,Constipation
+JA06,Acute appendicitis
+AB40,Epilepsy
+6A70,Depressive episode
+6C20,Generalised anxiety disorder
+8B22,Ischaemic stroke
+GC00,Acute pharyngitis
+GC10,Acute tonsillitis
+GC40,Sinusitis
+MD11,Anaemia of chronic disease
+KA00,Chronic kidney disease
+KB2Z,Nephrolithiasis
+8A80,Parkinson disease
+8A00,Multiple sclerosis
+1A00,Tuberculosis
+2B5Z,Lymphoma
+2D11,Leukaemia
+BD10,Angina pectoris
+KD12,Urinary tract calculus
+LA85,Rheumatoid arthritis
+FA10,Cough
+FA11,Dyspnoea
