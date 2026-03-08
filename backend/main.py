@@ -8,6 +8,7 @@ import json
 import uuid
 import shutil
 import logging
+import threading
 from pathlib import Path
 from typing import Optional
 
@@ -31,6 +32,44 @@ logger = logging.getLogger("api")
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
+JOBS_FILE = UPLOAD_DIR / "jobs.json"
+_jobs_lock = threading.Lock()
+
+
+def _load_jobs() -> dict:
+    """Load persisted job store from disk (survives process restarts)."""
+    if JOBS_FILE.exists():
+        try:
+            with open(JOBS_FILE, "r") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+
+def _save_jobs(jobs: dict) -> None:
+    """Atomically persist job store to disk."""
+    tmp = JOBS_FILE.with_suffix(".tmp")
+    try:
+        with open(tmp, "w") as f:
+            json.dump(jobs, f)
+        tmp.replace(JOBS_FILE)
+    except Exception as e:
+        logger.error(f"Failed to persist jobs: {e}")
+
+
+def _set_job(job_id: str, data: dict) -> None:
+    """Update a job record in memory and persist to disk."""
+    with _jobs_lock:
+        _jobs[job_id] = data
+        _save_jobs(_jobs)
+
+
+# ── In-memory + disk-backed job store ────────────────────────────────────────
+_jobs: dict[str, dict] = _load_jobs()
+logger.info(f"Loaded {len(_jobs)} existing jobs from disk.")
+
+
 # ── FastAPI App ───────────────────────────────────────────────────────────────
 app = FastAPI(
     title="Ambient Clinical Note Generator API",
@@ -40,15 +79,11 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Restrict in production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-# ── In-memory job store (use Redis/DB in production) ──────────────────────────
-_jobs: dict[str, dict] = {}
 
 
 # ── Request/Response Models ───────────────────────────────────────────────────
@@ -66,6 +101,7 @@ class InsuranceReportRequest(BaseModel):
 class BillingCodeRequest(BaseModel):
     job_id: str
     consultation_minutes: Optional[int] = 10
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Endpoints
@@ -86,7 +122,7 @@ async def upload_audio(
     """
     Upload a consultation audio file.
     Returns a job_id that can be used to track processing progress.
-    Supported formats: .mp3, .wav, .m4a, .ogg, .flac
+    Supported formats: .mp3, .wav, .m4a, .ogg, .flac, .webm
     """
     ALLOWED = {".mp3", ".wav", ".m4a", ".ogg", ".flac", ".webm"}
     suffix = Path(file.filename).suffix.lower()
@@ -104,14 +140,13 @@ async def upload_audio(
 
     logger.info(f"Audio uploaded: {dest_path} | job={job_id}")
 
-    # Store initial job record
-    _jobs[job_id] = {
+    _set_job(job_id, {
         "status": "uploaded",
         "patient_name": patient_name,
         "audio_path": str(dest_path),
         "result": None,
         "error": None,
-    }
+    })
 
     return {"job_id": job_id, "status": "uploaded", "filename": file.filename}
 
@@ -127,11 +162,19 @@ async def generate_note(
     """
     job = _jobs.get(job_id)
     if not job:
+        # Try reloading from disk in case of cold start
+        persisted = _load_jobs()
+        job = persisted.get(job_id)
+        if job:
+            with _jobs_lock:
+                _jobs[job_id] = job
+    if not job:
         raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found.")
     if job["status"] == "processing":
         return {"job_id": job_id, "status": "already_processing"}
 
     job["status"] = "processing"
+    _set_job(job_id, job)
     background_tasks.add_task(_run_workflow, job_id, job)
 
     return {"job_id": job_id, "status": "processing"}
@@ -140,7 +183,14 @@ async def generate_note(
 @app.get("/status/{job_id}")
 async def get_status(job_id: str):
     """Poll the status and result of a processing job."""
+    # Check in-memory first, then reload from disk (handles cold restarts)
     job = _jobs.get(job_id)
+    if not job:
+        persisted = _load_jobs()
+        job = persisted.get(job_id)
+        if job:
+            with _jobs_lock:
+                _jobs[job_id] = job  # warm the in-memory cache
     if not job:
         raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found.")
     return {
@@ -265,7 +315,6 @@ async def billing_codes(req: BillingCodeRequest):
     symptoms = entities.get("symptoms", [])
     minutes = req.consultation_minutes
 
-    # Determine E/M level from complexity
     complexity = "low"
     if len(symptoms) > 3 or len(medications) > 2:
         complexity = "moderate"
@@ -308,8 +357,8 @@ def _run_workflow(job_id: str, job: dict):
         }
         logger.info(f"Starting workflow for job={job_id}")
         final_state = clinical_workflow.invoke(initial_state)
-        job["status"] = "completed"
-        job["result"] = {
+
+        result = {
             "transcript": final_state.get("transcript", ""),
             "extracted_entities": final_state.get("extracted_entities", {}),
             "soap_note": final_state.get("soap_note", {}),
@@ -319,10 +368,18 @@ def _run_workflow(job_id: str, job: dict):
             "patient_summary": final_state.get("patient_summary", ""),
             "followups": final_state.get("followups", []),
             "analytics": final_state.get("analytics", {}),
-            "ai_disclaimer": final_state.get("ai_disclaimer", "⚠️ AI Generated — Requires Doctor Review"),
+            "ai_disclaimer": final_state.get(
+                "ai_disclaimer", "⚠️ AI Generated — Requires Doctor Review"
+            ),
         }
+
+        job["status"] = "completed"
+        job["result"] = result
+        _set_job(job_id, job)
         logger.info(f"Workflow complete for job={job_id}")
+
     except Exception as e:
         logger.error(f"Workflow failed for job={job_id}: {e}", exc_info=True)
         job["status"] = "failed"
         job["error"] = str(e)
+        _set_job(job_id, job)
